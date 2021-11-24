@@ -18,19 +18,21 @@ The cell below installs `procgen` and downloads a small `utils.py` script that c
 
 """Hyperparameters. These values should be a good starting point. You can modify them later once you have a working implementation."""
 
-env_name = 'starpilot'
+env_name = 'climber'
+#exp_name = input('Insert experiment name:')
+exp_name = 'nature'
 
-# Hyperparameters
-total_steps = 8e6
-num_envs = 32
-num_levels = 10
-num_steps = 256
-num_epochs = 3
-batch_size = 512
-eps = .2
-grad_eps = .5
-value_coef = .5
-entropy_coef = .01
+# Hyperparameters (same as in article, optimal for PPO with adam optimizer)
+total_steps = 25e6 #8e6 # total timesteps
+num_envs = 32 #32
+num_levels = 200 #10
+num_steps = 256 # timesteps per rollout
+num_epochs = 3 # epochs per rollout
+batch_size = 8 # article uses minbatches of 8?
+eps = .2 # PPO clip range
+grad_eps = .5 # not specified in article?
+value_coef = .5 # not specified in article?
+entropy_coef = .01 # entropy bonus
 
 """Network definitions. We have defined a policy network for you in advance. It uses the popular `NatureDQN` encoder architecture (see below), while policy and value functions are linear projections from the encodings. There is plenty of opportunity to experiment with architectures, so feel free to do that! Perhaps implement the `Impala` encoder from [this paper](https://arxiv.org/pdf/1802.01561.pdf) (perhaps minus the LSTM)."""
 
@@ -94,7 +96,7 @@ print('Action space:', env.action_space.n)
 
 # Define network
 in_channels = env.observation_space.shape[0] # shape of state
-feature_dim = 8 # arbitrary chosen
+feature_dim = 512 # arbitrary chosen (smaller than number of pixels)
 num_actions = env.action_space.n # number of possible actions (for climber: left, right, jump)
 
 encoder = Encoder(in_channels, feature_dim)
@@ -146,7 +148,10 @@ while step < total_steps:
 
     # Iterate over batches of transitions
     generator = storage.get_generator(batch_size)
-    for batch in generator: 
+    i=0
+    for batch in generator:
+      print(i)
+      i=i+1
       b_obs, b_action, b_log_prob, b_value, b_returns, b_advantage = batch
 
       # Get current policy outputs
@@ -184,7 +189,7 @@ while step < total_steps:
   print(f'Step: {step}\tMean reward: {storage.get_reward()}')
 
 print('Completed training!')
-torch.save(policy.state_dict, 'checkpoint.pt')
+torch.save(policy.state_dict(), 'checkpoint_'+exp_name+'.pt')
 
 """# Notes:
 
@@ -243,4 +248,4 @@ print('Average return:', total_reward)
 
 # Save frames as video
 frames = torch.stack(frames)
-imageio.mimsave('vid.mp4', frames, fps=25)
+imageio.mimsave('vid_'+exp_name+'.mp4', frames, fps=25)
